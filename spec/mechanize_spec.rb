@@ -2,6 +2,7 @@
 
 require 'pry'
 require 'mechanize'
+require_relative '../lib/override_agent'
 
 RSpec.describe Mechanize do
   describe 'Version' do
@@ -34,6 +35,27 @@ RSpec.describe Mechanize do
 
       it 'returns page contents' do
         expect(response.title).to eq 'note社エンジニアの開発note'
+      end
+    end
+
+    context 'when Mechanize::HTTP::Agent is overridden' do
+      Mechanize::HTTP::Agent.prepend(OverrideAgent)
+
+      context 'when simple mechanize' do
+        agent = Mechanize.new
+
+        it 'raises error' do
+          expect { agent.get('https://engineerteam.note.jp') }.to raise_error(Mechanize::RedirectLimitReachedError)
+        end
+      end
+
+      context 'when User-Agent is set' do
+        agent = Mechanize.new { |a| a.user_agent = 'My User Agent' }
+        response = agent.get('https://engineerteam.note.jp')
+
+        it 'returns page contents' do
+          expect(response.title).to eq 'note社エンジニアの開発note'
+        end
       end
     end
   end
